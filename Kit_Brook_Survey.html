@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kit Brook Walkover Survey</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; }
+
+  #header {
+    background: #2c5f2e;
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  #header h1 { font-size: 18px; font-weight: bold; }
+  #header p { font-size: 12px; opacity: 0.85; }
+
+  #map { height: calc(100vh - 56px); width: 100%; }
+
+  #legend {
+    position: absolute;
+    bottom: 30px;
+    right: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 12px 16px;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    font-size: 12px;
+    min-width: 180px;
+  }
+  #legend h4 {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.2s;
+  }
+  .legend-item:hover { opacity: 0.7; }
+  .legend-item.inactive { opacity: 0.35; }
+  .legend-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    flex-shrink: 0;
+  }
+  .legend-count {
+    margin-left: auto;
+    color: #999;
+    font-size: 11px;
+  }
+
+  .leaflet-popup-content-wrapper {
+    border-radius: 6px;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.25);
+    padding: 0;
+    overflow: hidden;
+  }
+  .leaflet-popup-content {
+    margin: 0;
+    width: 320px !important;
+  }
+  .popup-header {
+    color: white;
+    padding: 10px 14px;
+  }
+  .popup-header h3 { font-size: 14px; margin-bottom: 2px; }
+  .popup-header .cat-label { font-size: 11px; opacity: 0.9; font-style: italic; }
+  .popup-header .grid { font-size: 11px; opacity: 0.85; }
+  .popup-body { padding: 12px 14px; }
+  .popup-body img {
+    width: 100%;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .popup-body p { font-size: 12px; color: #444; line-height: 1.5; }
+
+  .custom-marker {
+    border: 2px solid white;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <h1>Kit Brook Walkover Survey</h1>
+    <p>Wild Trout Trust &mdash; October 2023 &mdash; Click a marker to view survey notes &mdash; Click legend to filter</p>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<div id="legend">
+  <h4>Survey Categories</h4>
+  <div class="legend-item" data-cat="fish" onclick="toggleCategory('fish')">
+    <div class="legend-dot" style="background:#e74c3c"></div>
+    <span>Fish Passage</span>
+    <span class="legend-count">7</span>
+  </div>
+  <div class="legend-item" data-cat="fencing" onclick="toggleCategory('fencing')">
+    <div class="legend-dot" style="background:#e67e22"></div>
+    <span>Fencing / Livestock</span>
+    <span class="legend-count">10</span>
+  </div>
+  <div class="legend-item" data-cat="sediment" onclick="toggleCategory('sediment')">
+    <div class="legend-dot" style="background:#f1c40f"></div>
+    <span>Sediment / Water Quality</span>
+    <span class="legend-count">9</span>
+  </div>
+  <div class="legend-item" data-cat="good" onclick="toggleCategory('good')">
+    <div class="legend-dot" style="background:#27ae60"></div>
+    <span>Good Habitat</span>
+    <span class="legend-count">7</span>
+  </div>
+  <div class="legend-item" data-cat="floodplain" onclick="toggleCategory('floodplain')">
+    <div class="legend-dot" style="background:#2980b9"></div>
+    <span>Floodplain / Restoration</span>
+    <span class="legend-count">7</span>
+  </div>
+  <div class="legend-item" data-cat="invasive" onclick="toggleCategory('invasive')">
+    <div class="legend-dot" style="background:#8e44ad"></div>
+    <span>Invasive Species</span>
+    <span class="legend-count">2</span>
+  </div>
+</div>
+
+<script>
+const points = [
+  {
+    "id": 1,
+    "fig": 1,
+    "grid": "ST 32221 01523",
+    "lat": 50.80928,
+    "lng": -2.963409,
+    "caption": "The start of the walkover near the confluence with the River Axe. Marginal plant diversity is low with nettles and invasive non-native Himalayan balsam dominating, suggesting that the soil has a high nitrogen content, likely to be as a result of slurry spreading in the adjacent fields.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_01.jpg",
+    "category": "invasive",
+    "color": "#8e44ad",
+    "cat_label": "Invasive Species"
+  },
+  {
+    "id": 2,
+    "fig": 2,
+    "grid": "ST 32138 01563",
+    "lat": 50.80963,
+    "lng": -2.964594,
+    "caption": "The lower reaches near the confluence of the Axe have a strong meandering planform with good pool, riffle, and glide sequences. A few small bankside alders are the only source of shade and overhead cover. Tree planting in this area would be beneficial.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_02.jpg",
+    "category": "good",
+    "color": "#27ae60",
+    "cat_label": "Good Habitat"
+  },
+  {
+    "id": 3,
+    "fig": 3,
+    "grid": "ST 32162 01571",
+    "lat": 50.809705,
+    "lng": -2.964255,
+    "caption": "Water-crowfoot is abundant and gravels in this lower reach are plentiful and relatively free from fine sediment (during time of observation). A redd survey would be beneficial to ascertain whether these gravels in the lower reach are utilised for spawning. If so, large woody material (LWM) in the channel would be beneficial to scour the riverbed, sorting and cleaning gravels, whilst providing cover for trout.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_03.jpg",
+    "category": "good",
+    "color": "#27ae60",
+    "cat_label": "Good Habitat"
+  },
+  {
+    "id": 4,
+    "fig": 4,
+    "grid": "ST 32164 01580",
+    "lat": 50.809786,
+    "lng": -2.964229,
+    "caption": "Approximately 200m of both banks are fenced off and a path mown on the LB in this lower reach inspected. The fencing could be moved back to create a buffer zone of 5m+. This would allow a larger buffer zone to establish, allowing for more tree diversity, which would help protect the river from the adjacent farming land practices.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_04.jpg",
+    "category": "fencing",
+    "color": "#e67e22",
+    "cat_label": "Fencing / Livestock"
+  },
+  {
+    "id": 5,
+    "fig": 5,
+    "grid": "ST 32082 01571",
+    "lat": 50.809695,
+    "lng": -2.965391,
+    "caption": "Where the fencing ends, livestock have access to the Kit Brook. Marginal plants have been grazed out and bank poaching is resulting in the brook becoming overly wide with excess fine sediments inputs to the brook which will have a degrading effect on both the Kit Brook and the Axe. Fencing and off-line drinking solutions should be installed.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_05.jpg",
+    "category": "fencing",
+    "color": "#e67e22",
+    "cat_label": "Fencing / Livestock"
+  },
+  {
+    "id": 6,
+    "fig": 6,
+    "grid": "ST 32026 01608",
+    "lat": 50.810021,
+    "lng": -2.966193,
+    "caption": "The LB is vulnerable to erosion as the fencing has been installed right on the bank top. Grazing has reduced marginal plant diversity, reducing the banks resilience to erosion. Grazed grasses divert their energy into growing new shoots, rather than forming complex root structures that would otherwise help bind the banks.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_06.jpg",
+    "category": "fencing",
+    "color": "#e67e22",
+    "cat_label": "Fencing / Livestock"
+  },
+  {
+    "id": 7,
+    "fig": 7,
+    "grid": "ST 31939 01682",
+    "lat": 50.810677,
+    "lng": -2.967441,
+    "caption": "A livestock drinking bay acts as a point source of fine sediment. Ideally, off-line drinking solutions should be provided, and the fencing moved back to create a buffer zone 5m+.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_07.jpg",
+    "category": "sediment",
+    "color": "#f1c40f",
+    "cat_label": "Sediment / Water Quality"
+  },
+  {
+    "id": 8,
+    "fig": 8,
+    "grid": "ST 31817 01894",
+    "lat": 50.812568,
+    "lng": -2.969212,
+    "caption": "The fencing along the length of the field is too close to the brook and needs to be moved back. Multiple point sources of fine sediment ingress were observed due to cattle poaching.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_08.jpg",
+    "category": "fencing",
+    "color": "#e67e22",
+    "cat_label": "Fencing / Livestock"
+  },
+  {
+    "id": 9,
+    "fig": 9,
+    "grid": "ST 31799 01982",
+    "lat": 50.813357,
+    "lng": -2.969484,
+    "caption": "The brook upstream from the road bridge has little habitat diversity and flows are uniform. Bankside trees on the RB throughout this reach could easily be hinged downstream into the river margins and across the brook to create more sinuous flows and improve in-channel habitats.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_09.jpg",
+    "category": "good",
+    "color": "#27ae60",
+    "cat_label": "Good Habitat"
+  },
+  {
+    "id": 10,
+    "fig": 10,
+    "grid": "ST 31734 02047",
+    "lat": 50.813934,
+    "lng": -2.970419,
+    "caption": "A cut made at the bottom of a sloping field directs surface water (and soil) off the arable field and into the brook. In the top of the photo, note the proximity of the crop to the top of the bank.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_10.jpg",
+    "category": "sediment",
+    "color": "#f1c40f",
+    "cat_label": "Sediment / Water Quality"
+  },
+  {
+    "id": 11,
+    "fig": 11,
+    "grid": "ST 31668 02142",
+    "lat": 50.814781,
+    "lng": -2.971374,
+    "caption": "The buffer zone needs to be widened here to protect the brook from increased inputs of nutrients and sediments.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_11.jpg",
+    "category": "sediment",
+    "color": "#f1c40f",
+    "cat_label": "Sediment / Water Quality"
+  },
+  {
+    "id": 12,
+    "fig": 12,
+    "grid": "ST 31661 02185",
+    "lat": 50.815166,
+    "lng": -2.971481,
+    "caption": "Sheep grazing has resulted in the LB slumping and the brook in this reach becoming overwide. Marginal plants and grasses have started to colonise the slumped bank, which will help bind the banks together. This area needs livestock exclusion immediately to stop the bank poaching and over widening.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_12.jpg",
+    "category": "fencing",
+    "color": "#e67e22",
+    "cat_label": "Fencing / Livestock"
+  },
+  {
+    "id": 13,
+    "fig": 13,
+    "grid": "ST 31557 02389",
+    "lat": 50.816988,
+    "lng": -2.972995,
+    "caption": "The floodplain adjacent to the river is ripe for enhancement. Floodplain connectivity is often underappreciated in maintaining river/brook and watershed health. A connected, functional floodplain reduces the impacts of floods and droughts and helps moderate river temperatures.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_13.jpg",
+    "category": "floodplain",
+    "color": "#2980b9",
+    "cat_label": "Floodplain / Restoration"
+  },
+  {
+    "id": 15,
+    "fig": 15,
+    "grid": "ST 31438 02558",
+    "lat": 50.818494,
+    "lng": -2.974716,
+    "caption": "Habitat diversity in the brook is high in the reach adjacent to the floodplain where restoration is recommended. The brook has a very active geomorphology (shifting between pool and riffle sequences), and the gradient is steeper compared to D/S. Note Himalayan balsam is abundant in this reach and needs to be controlled.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_15.jpg",
+    "category": "good",
+    "color": "#27ae60",
+    "cat_label": "Good Habitat"
+  },
+  {
+    "id": 16,
+    "fig": 16,
+    "grid": "ST 31438 02558",
+    "lat": 50.818494,
+    "lng": -2.974716,
+    "caption": "Sympathetic tree works are required in this reach, to open up the occasional sky light into the brook, particularly focusing on increasing light over the shallow riffle areas and maintaining shade over the deeper pools.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_16.jpg",
+    "category": "good",
+    "color": "#27ae60",
+    "cat_label": "Good Habitat"
+  },
+  {
+    "id": 17,
+    "fig": 17,
+    "grid": "ST 31396 02679",
+    "lat": 50.819577,
+    "lng": -2.975335,
+    "caption": "A redundant weir with a relatively small head drop and a long sloping concrete sill creates fish passage issues. Fully removing this barrier will improve both habitat quality and will allow a degree of natural recovery and recruitment by migration.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_17.jpg",
+    "category": "fish",
+    "color": "#e74c3c",
+    "cat_label": "Fish Passage"
+  },
+  {
+    "id": 20,
+    "fig": 20,
+    "grid": "ST 31381 02744",
+    "lat": 50.820159,
+    "lng": -2.97556,
+    "caption": "A ford crossing also creates unwanted fish passage issues. The concrete sill will accelerate/throttle flows and a small head drop will also impede fish passage. Ideally this should be removed and if necessary, replaced with a clear span bridge.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_20.jpg",
+    "category": "fish",
+    "color": "#e74c3c",
+    "cat_label": "Fish Passage"
+  },
+  {
+    "id": 21,
+    "fig": 21,
+    "grid": "ST 31384 02799",
+    "lat": 50.820654,
+    "lng": -2.975528,
+    "caption": "Numerous field ditches are draining the land, potentially resulting in the brook becoming more turbulent and prone to flooding during high rainfall events.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_21.jpg",
+    "category": "floodplain",
+    "color": "#2980b9",
+    "cat_label": "Floodplain / Restoration"
+  },
+  {
+    "id": 22,
+    "fig": 22,
+    "grid": "ST 31317 02865",
+    "lat": 50.82124,
+    "lng": -2.976492,
+    "caption": "A duck pond is acting as a point source of fine sediment and nutrient inputs. In this density the amount of faecal matter produced by the ducks is likely to significantly increase the amount of phosphates and nitrogen into brook, potentially leading to eutrophication problems.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_22.jpg",
+    "category": "sediment",
+    "color": "#f1c40f",
+    "cat_label": "Sediment / Water Quality"
+  },
+  {
+    "id": 23,
+    "fig": 23,
+    "grid": "ST 31266 02984",
+    "lat": 50.822303,
+    "lng": -2.977238,
+    "caption": "The marginal plants on the LB have been strimmed off. The electric fencing is also too close to the river and should be moved back to allow a diverse riparian buffer strip to become established.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_23.jpg",
+    "category": "fencing",
+    "color": "#e67e22",
+    "cat_label": "Fencing / Livestock"
+  },
+  {
+    "id": 24,
+    "fig": 24,
+    "grid": "ST 31244 03006",
+    "lat": 50.822499,
+    "lng": -2.977555,
+    "caption": "The brook in this reach has a very narrow corridor. Grazing and strimming of the banks has resulted in a reduction of marginal plant diversity and tree cover is only one tree deep, making the brook vulnerable to disease, pests and climate change.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_24.jpg",
+    "category": "fencing",
+    "color": "#e67e22",
+    "cat_label": "Fencing / Livestock"
+  },
+  {
+    "id": 25,
+    "fig": 25,
+    "grid": "ST 31143 03160",
+    "lat": 50.823871,
+    "lng": -2.979018,
+    "caption": "Despite the pressures from the surrounding land, habitat quality is good. There is a good balance of light and shade, abundant ranunculus growth and clean gravels. This reach however does appear unnaturally straight and would benefit from the introduction of Large Woody Material (LWM) features.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_25.jpg",
+    "category": "good",
+    "color": "#27ae60",
+    "cat_label": "Good Habitat"
+  },
+  {
+    "id": 26,
+    "fig": 26,
+    "grid": "ST 31083 03288",
+    "lat": 50.825015,
+    "lng": -2.979894,
+    "caption": "Stones and boulders washed down from a property upstream during a flood. This demonstrates the brook characteristics during high flows and goes to show how important spate refuge is for fish. Fencing is required on the RB.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_26.jpg",
+    "category": "sediment",
+    "color": "#f1c40f",
+    "cat_label": "Sediment / Water Quality"
+  },
+  {
+    "id": 27,
+    "fig": 27,
+    "grid": "ST 31038 03353",
+    "lat": 50.825594,
+    "lng": -2.980545,
+    "caption": "The property where the stonework was washed away. The gabion bank revetment on the LB and high masonry walls on the RB throttle high flows, resulting in flooding for the property.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_27.jpg",
+    "category": "fish",
+    "color": "#e74c3c",
+    "cat_label": "Fish Passage"
+  },
+  {
+    "id": 28,
+    "fig": 28,
+    "grid": "ST 31044 03422",
+    "lat": 50.826215,
+    "lng": -2.980473,
+    "caption": "Heading upstream from the property, habitat quality is good. The brooks gradient increases as it flows through mature woodland.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_28.jpg",
+    "category": "good",
+    "color": "#27ae60",
+    "cat_label": "Good Habitat"
+  },
+  {
+    "id": 29,
+    "fig": 29,
+    "grid": "ST 31030 03449",
+    "lat": 50.826456,
+    "lng": -2.980676,
+    "caption": "A boulder weir creating fish passage and geomorphology issues. This weir should be fully removed if possible. If total removal isn't possible, notching the centre of the weir should improve fish passage and sediment transport.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_29.jpg",
+    "category": "fish",
+    "color": "#e74c3c",
+    "cat_label": "Fish Passage"
+  },
+  {
+    "id": 30,
+    "fig": 30,
+    "grid": "ST 31008 03494",
+    "lat": 50.826858,
+    "lng": -2.980997,
+    "caption": "Upstream of the boulder weir. The impounded reach lacks flow diversity and the gravels are covered in fine sediment. Removing the weir downstream is key to improving habitat quality in this reach.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_30.jpg",
+    "category": "sediment",
+    "color": "#f1c40f",
+    "cat_label": "Sediment / Water Quality"
+  },
+  {
+    "id": 31,
+    "fig": 31,
+    "grid": "ST 30846 03774",
+    "lat": 50.829356,
+    "lng": -2.98335,
+    "caption": "For some 200m the brook flows through a mature woodland. The long trailing roots from alder trees provide excellent cover habitat. A tall stand of bamboo was observed on the LB, and this should be removed as a non-native and invasive species.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_31.jpg",
+    "category": "invasive",
+    "color": "#8e44ad",
+    "cat_label": "Invasive Species"
+  },
+  {
+    "id": 32,
+    "fig": 32,
+    "grid": "ST 30785 03879",
+    "lat": 50.830293,
+    "lng": -2.984237,
+    "caption": "An Irish ford and foot bridge presents severe fish passage issues. Sea trout are known to pass this structure. Highways should be consulted about this crossing, and it should be replaced with an appropriately sunken box culvert.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_32.jpg",
+    "category": "fish",
+    "color": "#e74c3c",
+    "cat_label": "Fish Passage"
+  },
+  {
+    "id": 33,
+    "fig": 33,
+    "grid": "ST 30750 03915",
+    "lat": 50.830613,
+    "lng": -2.98474,
+    "caption": "Upstream of the Irish ford is a known spawning location. Livestock access has caused severe bank poaching, resulting in accelerated levels of fine sediment entering the brook and smothering spawning gravels. Livestock fencing needs to be installed.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_33.jpg",
+    "category": "fencing",
+    "color": "#e67e22",
+    "cat_label": "Fencing / Livestock"
+  },
+  {
+    "id": 34,
+    "fig": 34,
+    "grid": "ST 30748 03940",
+    "lat": 50.830837,
+    "lng": -2.984773,
+    "caption": "As a known spawning location this area must be protected from livestock. Bank poaching is resulting in parts of the brook becoming over wide, leading to sedimentation and a smothering of gravels.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_34.jpg",
+    "category": "fencing",
+    "color": "#e67e22",
+    "cat_label": "Fencing / Livestock"
+  },
+  {
+    "id": 35,
+    "fig": 35,
+    "grid": "ST 30748 03959",
+    "lat": 50.831008,
+    "lng": -2.984777,
+    "caption": "Severe bank poaching on the LB, resulting in excess fine sediment inputs and habitat degradation.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_35.jpg",
+    "category": "sediment",
+    "color": "#f1c40f",
+    "cat_label": "Sediment / Water Quality"
+  },
+  {
+    "id": 36,
+    "fig": 36,
+    "grid": "ST 30583 04310",
+    "lat": 50.834144,
+    "lng": -2.987187,
+    "caption": "An unfenced area of the brook acts as a livestock drinking bay. Poached banks are bare and vulnerable to erosion, further increasing fine sediment inputs. This drinking bay should be fenced off and alternative off-line drinking solutions provided.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_36.jpg",
+    "category": "fencing",
+    "color": "#e67e22",
+    "cat_label": "Fencing / Livestock"
+  },
+  {
+    "id": 37,
+    "fig": 37,
+    "grid": "ST 30558 04402",
+    "lat": 50.834968,
+    "lng": -2.987559,
+    "caption": "Approximately 30m of the RB consist of a harsh bank revetment (possibly unconsented) that offers little in terms of habitat diversity. Chestnut stakes should be used to replace the treated posts.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_37.jpg",
+    "category": "sediment",
+    "color": "#f1c40f",
+    "cat_label": "Sediment / Water Quality"
+  },
+  {
+    "id": 39,
+    "fig": 39,
+    "grid": "ST 30540 04608",
+    "lat": 50.836818,
+    "lng": -2.987854,
+    "caption": "Another livestock drinking bay is resulting in a small area becoming over wide with accelerated fine sediment inputs. Gates positioned U/S and D/S of the drinking bay are collecting debris that could potentially create fish passage problems.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_39.jpg",
+    "category": "fish",
+    "color": "#e74c3c",
+    "cat_label": "Fish Passage"
+  },
+  {
+    "id": 40,
+    "fig": 40,
+    "grid": "ST 30518 04640",
+    "lat": 50.837103,
+    "lng": -2.988172,
+    "caption": "The brook has been artificially straightened and is perched above its floodplain. Both banks have been strimmed off and the reach is devoid of tree cover. LWM in this reach is totally lacking and complex gnarly woody features could be imported from the farm and secured in the channel.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_40.jpg",
+    "category": "floodplain",
+    "color": "#2980b9",
+    "cat_label": "Floodplain / Restoration"
+  },
+  {
+    "id": 41,
+    "fig": 41,
+    "grid": "ST 30518 04640",
+    "lat": 50.837103,
+    "lng": -2.988172,
+    "caption": "With the brook behind this shot, it is clearly visible that brook is perched above its floodplain. Re-meandering the river back through its original position in combination with excavating some floodplain features would deliver enormous habitat benefits.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_41.jpg",
+    "category": "floodplain",
+    "color": "#2980b9",
+    "cat_label": "Floodplain / Restoration"
+  },
+  {
+    "id": 42,
+    "fig": 42,
+    "grid": "ST 30484 04737",
+    "lat": 50.837971,
+    "lng": -2.988674,
+    "caption": "Continuing upstream the brook is pinned to its valley side and both banks are still strimmed off. This area is ripe for re-meandering and floodplain restoration.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_42.jpg",
+    "category": "floodplain",
+    "color": "#2980b9",
+    "cat_label": "Floodplain / Restoration"
+  },
+  {
+    "id": 43,
+    "fig": 43,
+    "grid": "ST 30442 04837",
+    "lat": 50.838866,
+    "lng": -2.989289,
+    "caption": "(Photo taken looking U/S) The RB of the brook is constructed out of cobbles, confirming that the brook in this reach has been artificially modified. Sheep grazing and bank poaching has resulted in a complete lack of marginal plants.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_43.jpg",
+    "category": "floodplain",
+    "color": "#2980b9",
+    "cat_label": "Floodplain / Restoration"
+  },
+  {
+    "id": 44,
+    "fig": 44,
+    "grid": "ST 30442 04939",
+    "lat": 50.839783,
+    "lng": -2.989309,
+    "caption": "A crossing for livestock and farm machinery acts as a point source of fine sediment inputs. If continually used the crossing should be formalised with a hard standing to limit the amount of sediment inputs and bank/bed erosion.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_44.jpg",
+    "category": "sediment",
+    "color": "#f1c40f",
+    "cat_label": "Sediment / Water Quality"
+  },
+  {
+    "id": 45,
+    "fig": 45,
+    "grid": "ST 30417 04965",
+    "lat": 50.840013,
+    "lng": -2.989669,
+    "caption": "The brook towards the top of the field suddenly becomes very incised. The brook could be re-meandered through its floodplain in this location or both banks potentially could be regraded, and the bed level raised to encourage lateral movement out onto the floodplain.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_45.jpg",
+    "category": "floodplain",
+    "color": "#2980b9",
+    "cat_label": "Floodplain / Restoration"
+  },
+  {
+    "id": 46,
+    "fig": 46,
+    "grid": "ST 30365 05240",
+    "lat": 50.84248,
+    "lng": -2.99046,
+    "caption": "Another Irish ford at the end of the walkover. Despite being further up the system and nearer the headwaters, replacing with an appropriately sunken box culvert is still necessary.",
+    "photo": "https://raw.githubusercontent.com/WardBlanchard/kit-brook/main/Kit_Brook_Photos/Figure_46.jpg",
+    "category": "fish",
+    "color": "#e74c3c",
+    "cat_label": "Fish Passage"
+  }
+];
+
+const map = L.map('map').setView([50.825, -2.978], 14);
+
+L.tileLayer('https://api.os.uk/maps/raster/v1/zxy/Outdoor_3857/{z}/{x}/{y}.png?key=mEzFO2spKRe0OLxmxzWlznCZxDryuAUv', {
+  attribution: '&copy; Crown copyright and database rights 2024 OS',
+  maxZoom: 20
+}).addTo(map);
+
+const markersByCategory = {};
+const activeCategories = new Set(['fish','fencing','sediment','good','floodplain','invasive']);
+
+points.forEach(p => {
+  const icon = L.divIcon({
+    className: '',
+    html: `<div class="custom-marker" style="background:${p.color}">${p.fig}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -16]
+  });
+
+  const popup = `
+    <div class="popup-header" style="background:${p.color}">
+      <h3>Figure ${p.fig}</h3>
+      <div class="cat-label">${p.cat_label}</div>
+      <div class="grid">${p.grid}</div>
+    </div>
+    <div class="popup-body">
+      <img src="${p.photo}" alt="Figure ${p.fig}" onerror="this.style.display='none'">
+      <p>${p.caption}</p>
+    </div>`;
+
+  const marker = L.marker([p.lat, p.lng], {icon})
+    .bindPopup(popup, {maxWidth: 340})
+    .addTo(map);
+
+  if (!markersByCategory[p.category]) markersByCategory[p.category] = [];
+  markersByCategory[p.category].push(marker);
+});
+
+function toggleCategory(cat) {
+  const item = document.querySelector(`.legend-item[data-cat="${cat}"]`);
+  if (activeCategories.has(cat)) {
+    activeCategories.delete(cat);
+    item.classList.add('inactive');
+    markersByCategory[cat].forEach(m => map.removeLayer(m));
+  } else {
+    activeCategories.add(cat);
+    item.classList.remove('inactive');
+    markersByCategory[cat].forEach(m => m.addTo(map));
+  }
+}
+</script>
+</body>
+</html>
