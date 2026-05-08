@@ -190,24 +190,13 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.4);
   }
 
-  #locate-btn {
-    position: absolute;
-    top: 120px;
-    left: 10px;
-    z-index: 1000;
-    background: white;
-    border: 2px solid rgba(0,0,0,0.2);
-    border-radius: 4px;
-    width: 34px;
-    height: 34px;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+  .locate-control a {
+    font-size: 18px !important;
+    line-height: 30px !important;
+    text-decoration: none;
+    color: #333 !important;
   }
-  #locate-btn:hover { background: #f4f4f4; }
+  .locate-control a:hover { background: #f4f4f4; }
 </style>
 </head>
 <body>
@@ -300,7 +289,6 @@
 </div>
 
 <div id="map"></div>
-<button id="locate-btn" title="Find my location" onclick="locateMe()">⊕</button>
 
 <div id="legend">
   <h4>Survey Categories</h4>
@@ -906,26 +894,39 @@ function togglePanel() {
 
 let locationMarker = null;
 
-function locateMe() {
-  const btn = document.getElementById('locate-btn');
-  btn.textContent = '…';
-  map.locate({ setView: true, maxZoom: 17 });
-  map.once('locationfound', (e) => {
-    btn.textContent = '⊕';
-    if (locationMarker) map.removeLayer(locationMarker);
-    locationMarker = L.circleMarker(e.latlng, {
-      radius: 8,
-      fillColor: '#2c5f2e',
-      color: 'white',
-      weight: 2,
-      fillOpacity: 0.9
-    }).addTo(map).bindPopup('You are here').openPopup();
-  });
-  map.once('locationerror', () => {
-    btn.textContent = '⊕';
-    alert('Could not get your location. Make sure location access is allowed in your browser.');
-  });
-}
+// Add locate button as a proper Leaflet control (sits below zoom buttons)
+const LocateControl = L.Control.extend({
+  options: { position: 'topleft' },
+  onAdd: function(map) {
+    const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control locate-control');
+    const link = L.DomUtil.create('a', '', container);
+    link.href = '#';
+    link.title = 'Find my location';
+    link.innerHTML = '⊕';
+    L.DomEvent.on(link, 'click', (e) => {
+      L.DomEvent.preventDefault(e);
+      link.innerHTML = '…';
+      map.locate({ setView: true, maxZoom: 17 });
+      map.once('locationfound', (ev) => {
+        link.innerHTML = '⊕';
+        if (locationMarker) map.removeLayer(locationMarker);
+        locationMarker = L.circleMarker(ev.latlng, {
+          radius: 8,
+          fillColor: '#2c5f2e',
+          color: 'white',
+          weight: 2,
+          fillOpacity: 0.9
+        }).addTo(map).bindPopup('You are here').openPopup();
+      });
+      map.once('locationerror', () => {
+        link.innerHTML = '⊕';
+        alert('Could not get your location. Make sure location access is allowed in your browser.');
+      });
+    });
+    return container;
+  }
+});
+new LocateControl().addTo(map);
 </script>
 </body>
 </html>
