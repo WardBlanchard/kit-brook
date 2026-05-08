@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kit Brook Restoration Proposal</title>
+<title>Kit Brook Restoration Proposal ~ Sea Trout Rising</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -195,7 +195,7 @@
 
 <div id="header">
   <div>
-    <h1>Kit Brook Restoration Proposal</h1>
+    <h1>Kit Brook Restoration Proposal ~ Sea Trout Rising</h1>
     <p>Axe Vale Rivers Association &amp; Friends of the River Axe &mdash; Application to Devon Environment Foundation &mdash; 2025</p>
   </div>
   <button id="toggle-panel" onclick="togglePanel()">&#9650; Hide Details</button>
@@ -207,12 +207,12 @@
     <div class="panel-section">
       <h2>About This Proposal</h2>
       <p>The Kit Brook is a 10km stream in East Devon, rising from greensand springs north of Wambrook and flowing south to join the River Axe near Axe Farm. It supports populations of wild brown trout and sea trout and is an important tributary of the Axe catchment.</p>
-      <p>The brook is currently classified as <strong>Moderate ecological status</strong> under the Water Framework Directive. The primary drivers are poor livestock management, excess fine sediment inputs, and nutrient runoff from adjacent farmland.</p>
+      <p>The brook is currently classified as <strong>Moderate ecological status</strong> under the Water Framework Directive. It is considered to be a 'stronghold' for trout and sea trout as evidenced by repeated Environment Agency fish surveys. However it is subject to many and increasing challenges. The primary drivers are poor livestock management, excess fine sediment inputs, nutrient runoff from adjacent farmland and periodic blockages to migratory fish access.</p>
       <p>The Axe catchment is also facing increasing pressure from climate change. Flooding events that were once infrequent are now occurring multiple times annually, placing enormous stress on migratory fish populations at every stage of their lifecycle — from adult fish attempting to reach spawning grounds, to juveniles trying to survive repeated high flow events before they are strong enough to do so. Restoring the Kit Brook and its floodplain will make the wider Axe catchment more resilient to these pressures, slowing water flow, reducing flood peaks, and providing the stable, high quality habitat that sea trout and brown trout need to breed successfully and for their young to survive.</p>
       <p>This application is submitted by the <strong>Axe Vale Rivers Association (AVRA)</strong> and <strong>Friends of the River Axe</strong>, in collaboration with the <a href="https://www.wildtrout.org" target="_blank">Wild Trout Trust</a> whose walkover survey (October 2023) identified 42 locations requiring intervention along the brook's full length.</p>
       <p>AVRA operates the <strong>only sea trout hatchery in the country</strong>, underlining the organisation's unique expertise in and commitment to the conservation of sea trout populations in the Axe catchment. The Kit Brook is a key spawning tributary for these fish, making the restoration of this watercourse a direct priority for the hatchery programme.</p>
       <p><strong>What we are asking DEF to fund</strong> is the critical first step: engaging landowners and farmers along the route, presenting the survey findings, and working with them individually to identify and apply for the funding available to carry out the physical restoration works. This community engagement phase is the lever that unlocks the larger investment needed to restore the brook.</p>
-      <p>Field surveys will be carried out by <strong>George Greenshields</strong> of <a href="https://www.ecologic-consultants.co.uk/" target="_blank">Ecologic Consultants</a> and <strong>Simon Brown</strong>.</p>
+      <p>Field surveys will be carried out by <strong>George Greenshields</strong> of <a href="https://www.ecologic-consultants.co.uk/" target="_blank">Ecologic Consultants</a> and <strong>Simon Browning</strong>.</p>
     </div>
 
     <div class="panel-section">
@@ -820,7 +820,7 @@ const points = [
 
 const map = L.map('map').setView([50.825, -2.978], 14);
 
-L.tileLayer('https://api.os.uk/maps/raster/v1/zxy/Outdoor_3857/{z}/{x}/{y}.png?key=mEzFO2spKRe0OLxmxzWlznCZxDryuAUv', {
+L.tileLayer('/.netlify/functions/os-tiles/{z}/{x}/{y}', {
   attribution: '&copy; Crown copyright and database rights 2024 OS',
   maxZoom: 20
 }).addTo(map);
